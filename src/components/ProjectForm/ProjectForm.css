@@ -1,0 +1,138 @@
+/* --- NEW: Glassmorphism Container with Border Shimmer --- */
+.project-form-container {
+  width: 100%;
+  max-width: 720px;
+  margin: 2.5rem auto;
+  background-color: rgba(22, 27, 41, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(42, 48, 69, 0.5);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  position: relative;
+  animation: slideInFromBottom 0.7s ease-out;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* NEW SHIMMER */
+.project-form-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.03) 50%, transparent 60%);
+  background-size: 200% 100%;
+  animation: shimmer 15s infinite linear;
+  pointer-events: none;
+}
+
+/* Animations */
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes slideInFromBottom { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(122, 138, 255, 0.3); } 70% { box-shadow: 0 0 0 10px rgba(122, 138, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(122, 138, 255, 0); } }
+
+/* --- Header --- */
+.project-form-header {
+  text-align: center;
+  padding: 2.0rem 2.0rem 1.6rem;
+  border-bottom: 1px solid rgba(42, 48, 69, 0.5);
+  background: linear-gradient(180deg, rgba(30, 35, 50, 0.5) 0%, rgba(22, 27, 41, 0) 100%);
+}
+.project-form-header h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  background-image: linear-gradient(90deg, #A49BFF, #7A8AFF);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  margin: 0 0 0.3rem 0;
+}
+.project-form-header p {
+  font-size: 0.95rem;
+  color: #BDCFFF;
+  margin: 0;
+}
+
+/* --- Progress Bar --- */
+.progress-bar-container { width: 100%; height: 6px; background-color: rgba(42, 48, 69, 0.5); }
+.progress-bar { height: 100%; background-image: linear-gradient(90deg, #6C63FF, #4A4AFF); transition: width 0.4s ease-in-out; border-radius: 0 2px 2px 0; box-shadow: 0 0 10px rgba(122, 138, 255, 0.5); }
+
+/* --- Form Body --- */
+.project-form { padding: 2rem; overflow: hidden; }
+
+/* Steps */
+.conversational-step { display: flex; flex-direction: column; gap: 1.2rem; animation: fadeSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.conversational-step h3 { font-size: 1.55rem; font-weight: 600; background-image: linear-gradient(90deg, #90BFFF, #C2BFFF); background-clip: text; -webkit-background-clip: text; color: transparent; margin: 0; line-height: 1.3; min-height: 62px; }
+
+/* Input group */
+.input-group { position: relative; display: flex; flex-direction: column; gap: 0.6rem; }
+.input-icon { position: absolute; top: 50%; left: 1.25rem; transform: translateY(-50%); color: #6A7891; font-size: 1.1rem; z-index: 2; transition: color 0.2s, transform 0.2s ease-out; }
+.input-group textarea + .input-icon { top: 1.2rem; transform: none; }
+
+/* Inputs */
+input[type='text'], input[type='url'], input[type='email'], textarea {
+  width: 100%;
+  padding: 1.05rem 1.25rem;
+  font-size: 1rem;
+  color: #E0E0E0;
+  background-color: rgba(32, 38, 56, 0.7);
+  border: 1px solid #3A415A;
+  border-radius: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+.input-group input { padding-left: 3.5rem; }
+.input-group textarea { padding-left: 1.25rem; }
+input::placeholder, textarea::placeholder { color: #6A7891; }
+input:focus, textarea:focus { outline: none; border-color: #7A8AFF; box-shadow: 0 0 0 3px rgba(122, 138, 255, 0.18), 0 0 15px rgba(122, 138, 255, 0.12); background-color: rgba(32, 38, 56, 1); z-index: 3; }
+input:focus + .input-icon, textarea:focus + .input-icon { color: #7A8AFF; transform: translateY(-50%) scale(1.05); }
+textarea { resize: vertical; min-height: 120px; }
+
+/* File input (if used) */
+.file-input-label { display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1.1rem; font-size: 1rem; color: #A0AEC0; background-color: rgba(32, 38, 56, 0.7); border: 2px dashed #3A415A; border-radius: 10px; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
+.file-input-label:hover { background-color: #252C40; border-color: #7A8AFF; color: #fff; animation: pulseGlow 2s infinite; }
+.file-input-label svg { font-size: 1.2rem; }
+
+/* Buttons */
+.navigation-buttons { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.2rem; }
+.prev-button, .next-button, .add-project-button, .generate-button, .delete-button {
+  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.15rem; font-size: 0.98rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, background-color 0.15s;
+}
+.prev-button { background-color: #3A415A; color: #E0E0E0; }
+.prev-button:hover { background-color: #4A516A; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+.next-button { background-image: linear-gradient(90deg, #6C63FF, #4A4AFF); color: #fff; margin-left: auto; }
+.next-button:hover { opacity: 0.95; box-shadow: 0 8px 20px rgba(108,99,255,0.25); }
+.add-project-button { background-color: #28a745; color: #fff; }
+.add-project-button:hover { background-color: #218838; box-shadow: 0 8px 15px rgba(40,167,69,0.2); }
+.generate-button { padding: 0.95rem 1.6rem; font-size: 1.05rem; font-weight: 700; background-image: linear-gradient(90deg, #00C9FF, #92FE9D); color: #080C14; margin-left: auto; }
+.generate-button:hover { box-shadow: 0 10px 25px rgba(0,201,255,0.25); }
+
+/* Item list + item card */
+.item-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 220px; overflow-y: auto; padding-right: 0.5rem; margin-top: 0.5rem; }
+.item-card { display: flex; justify-content: space-between; align-items: center; background-color: rgba(22, 27, 41, 0.7); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #3A415A; animation: slideInUp 0.4s ease-out; }
+.item-card strong { font-size: 1rem; color: #FFFFFF; text-shadow: 0 0 5px rgba(255,255,255,0.05); }
+.item-card p, .item-card div { color: #A0AEC0; font-size: .9rem; margin: 0; }
+.delete-button { background: none; border: none; color: #FF8F8F; font-size: 1rem; cursor: pointer; padding: 0.45rem; border-radius: 6px; transition: color 0.15s; }
+.delete-button:hover { color: #FF6A6A; background: rgba(255,255,255,0.02); }
+
+/* add-item-form (used when adding list items) */
+.add-item-form { display: flex; flex-direction: column; gap: 1.25rem; background-color: rgba(32, 38, 56, 0.5); padding: 1.25rem; border-radius: 12px; border: 1px solid #3A415A; margin-top: 1rem; }
+.add-item-form h4 { font-size: 1.15rem; font-weight: 600; color: #fff; margin: 0; }
+
+/* small adjustments for smaller screens */
+@media (max-width: 640px) {
+  .project-form-container { margin: 1rem; max-width: 100%; border-radius: 12px; }
+  .project-form { padding: 1.25rem; }
+  .conversational-step h3 { font-size: 1.25rem; min-height: 48px; }
+  input[type='text'], textarea { padding: 0.9rem 1rem; font-size: 0.95rem; }
+  .navigation-buttons { gap: 0.5rem; flex-direction: column; align-items: stretch; }
+  .next-button { width: 100%; }
+}
