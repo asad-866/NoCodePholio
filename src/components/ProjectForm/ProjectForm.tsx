@@ -1,9 +1,10 @@
 "use client";
 
-// --- IMPORT useMemo ---
 import React, { useState, ChangeEvent, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import "./ProjectForm.css";
+// --- NEW: Import the loading screen ---
+import { LoadingScreen } from "./LoadingScreen";
 import {
   FaUser,
   FaEnvelope,
@@ -26,25 +27,23 @@ import {
   FaBrain,
   FaGithub,
   FaLinkedin,
+  FaUpload,
+  FaRocket, // Added for Generate button
 } from "react-icons/fa";
 import { useTypewriter, Cursor } from "react-simple-typewriter";
 
-// --- MODIFIED TypewriterLabel ---
+// --- (TypewriterLabel, Input, TextArea components remain the same) ---
 const TypewriterLabel: React.FC<{ text: string }> = React.memo(({ text }) => {
-  // Memoize the words array to prevent re-creation on every render
   const words = useMemo(() => [text], [text]);
-
   const [typedText] = useTypewriter({
-    words: words, // Use the memoized array
+    words: words,
     loop: 1,
     typeSpeed: 28,
   });
   return <h3>{typedText}<Cursor cursorStyle="_" /></h3>;
 });
-// --- End moved component ---
+TypewriterLabel.displayName = "TypewriterLabel";
 
-// --- Move Input/TextArea to module scope and use forwardRef + memo ---
-// stable components prevent remounts that blur inputs
 const Input = React.memo(React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ReactNode }>(
   ({ icon, ...props }, ref) => (
     <div className="input-group">
@@ -59,11 +58,11 @@ const TextArea = React.memo(React.forwardRef<HTMLTextAreaElement, React.Textarea
   (props, ref) => <textarea ref={ref} {...props} />
 ));
 TextArea.displayName = "TextArea";
-// --- End Input/TextArea move ---
+// --- (End of stable components) ---
 
 
 /* -------------------------
-   Types & Interfaces
+   Types & Interfaces (Same as before)
    ------------------------- */
 interface Personal {
   name: string;
@@ -111,7 +110,6 @@ interface Skills {
   databases: string;
   devops_cloud: string;
 }
-
 interface PortfolioData {
   personal: Personal;
   education: Education[];
@@ -129,9 +127,10 @@ type Phase =
   | "skills"
   | "projects"
   | "certifications"
-  | "social"
-  | "finish";
+  | "social";
+  // --- REMOVED "finish" phase ---
 
+// --- UPDATED: Removed "finish" from PHASES array ---
 const PHASES: Phase[] = [
   "personal",
   "education",
@@ -140,23 +139,19 @@ const PHASES: Phase[] = [
   "projects",
   "certifications",
   "social",
-  "finish",
 ];
 
-/* -------------------------
-   Helper: Step metadata
-   ------------------------- */
-type QuestionType = "text" | "textarea" | "email" | "url";
+type QuestionType = "text" | "textarea" | "email" | "url" | "file";
 
 interface Question {
   id: string;
   label: string;
-  fieldPath: string; // path like "personal.name" or special values for list logic
+  fieldPath: string;
   type?: QuestionType;
   icon?: React.ReactNode;
   optional?: boolean;
-  forList?: boolean; // true if this is part of a list item (education/experience/etc.)
-  listName?: keyof PortfolioData; // name of the list when forList true
+  forList?: boolean;
+  listName?: keyof PortfolioData;
 }
 
 /* -------------------------
@@ -164,6 +159,11 @@ interface Question {
    ------------------------- */
 export const ProjectForm: React.FC = () => {
   const router = useRouter();
+
+  // --- UPDATED: Combined loading states ---
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const [currentPhase, setCurrentPhase] = useState<Phase>("personal");
   const [phaseQuestionIndex, setPhaseQuestionIndex] = useState<number>(0);
@@ -178,31 +178,25 @@ export const ProjectForm: React.FC = () => {
     social: { linkedin: "", github: "", twitter: "", leetcode: "" },
   });
 
-  // Temporary item for list entries (education, experience, project, cert)
   const [tempEdu, setTempEdu] = useState<Education>({ degree: "", institution: "", duration: "", cgpa: "" });
   const [tempExp, setTempExp] = useState<Experience>({ company: "", position: "", duration: "", description: "", technologies: "" });
   const [tempProj, setTempProj] = useState<Project>({ title: "", category: "", description: "", techStack: "", githubUrl: "", liveUrl: "" });
   const [tempCert, setTempCert] = useState<Certification>({ name: "", issuer: "", year: "" });
 
-  // Controls whether we're currently adding items to a list (for repeated add flow)
   const [isAddingListItem, setIsAddingListItem] = useState<boolean>(false);
-
-  // For education/experience/projects/certs, keep a local step index for that single item
   const [listItemQuestionIndex, setListItemQuestionIndex] = useState<number>(0);
 
   /* -------------------------
-     Questions per phase
+     Questions per phase (Same as before)
      ------------------------- */
-
   const personalQuestions: Question[] = [
     { id: "name", label: "What's your full name?", fieldPath: "personal.name", type: "text", icon: <FaUser />, optional: false },
     { id: "title", label: "What's your title? (e.g., Full-stack Developer)", fieldPath: "personal.title", type: "text", icon: <FaLightbulb />, optional: false },
     { id: "email", label: "Email address", fieldPath: "personal.email", type: "email", icon: <FaEnvelope />, optional: false },
-    { id: "avatar", label: "Avatar URL (optional)", fieldPath: "personal.avatar", type: "url", icon: <FaImage />, optional: true },
+    { id: "avatar", label: "Upload your Avatar (optional)", fieldPath: "personal.avatar", type: "file", icon: <FaImage />, optional: true },
     { id: "bio", label: "Short bio (optional)", fieldPath: "personal.bio", type: "textarea", icon: <FaUser />, optional: true },
   ];
 
-  // When adding a list item, we will ask these sequentially
   const educationQuestionsForItem: Question[] = [
     { id: "degree", label: "Degree (e.g., B.Tech)", fieldPath: "degree", type: "text", icon: <FaGraduationCap /> },
     { id: "institution", label: "Institution (e.g., SATI)", fieldPath: "institution", type: "text" },
@@ -248,21 +242,20 @@ export const ProjectForm: React.FC = () => {
     { id: "leetcode", label: "LeetCode URL (optional)", fieldPath: "social.leetcode", type: "url", optional: true, icon: <FaCode /> },
   ];
 
-  /* Helper: get questions for current phase (not including list-add prompts) */
+
   const questionsForPhase = (phase: Phase): Question[] => {
     switch (phase) {
       case "personal": return personalQuestions;
       case "skills": return skillsQuestions;
       case "social": return socialQuestions;
-      default: return []; // For list phases we handle separately
+      default: return [];
     }
   };
 
   /* -------------------------
-     Helpers to update nested state
+     State Helpers (Same as before)
      ------------------------- */
   const setNestedValue = (path: string, value: string) => {
-    // path examples: "personal.name", "skills.programming"
     const parts = path.split(".");
     setFormData(prev => {
       const copy = JSON.parse(JSON.stringify(prev)) as PortfolioData;
@@ -285,9 +278,6 @@ export const ProjectForm: React.FC = () => {
     return cur ?? "";
   };
 
-  /* -------------------------
-     List helpers (add / reset)
-     ------------------------- */
   const resetTempForList = (listName: keyof PortfolioData) => {
     if (listName === "education") setTempEdu({ degree: "", institution: "", duration: "", cgpa: "" });
     if (listName === "experience") setTempExp({ company: "", position: "", duration: "", description: "", technologies: "" });
@@ -313,6 +303,9 @@ export const ProjectForm: React.FC = () => {
       setPhaseQuestionIndex(0);
       setIsAddingListItem(false);
       setListItemQuestionIndex(0);
+    } else {
+      // This is the last phase, trigger the final save
+      handleGenerateAndRedirect();
     }
   };
 
@@ -326,9 +319,6 @@ export const ProjectForm: React.FC = () => {
     }
   };
 
-  /* -------------------------
-     Handling answers for non-list phases
-     ------------------------- */
   const handleAnswerForPhase = (phase: Phase, qIndex: number, value: string) => {
     const questions = questionsForPhase(phase);
     const q = questions[qIndex];
@@ -343,51 +333,21 @@ export const ProjectForm: React.FC = () => {
     }
   };
 
-  /* -------------------------
-     Handling list phases (education, experience, projects, certifications)
-     ------------------------- */
-
-  // Start adding a new item (prompts one-by-one)
-  const startAddingListItem = (listName: keyof PortfolioData) => {
-    resetTempForList(listName);
-    setIsAddingListItem(true);
-    setListItemQuestionIndex(0);
-  };
-
-  // Cancel adding current temp item
-  const cancelAddingListItem = () => {
-    setIsAddingListItem(false);
-    setListItemQuestionIndex(0);
-    resetTempForList("education"); // safe reset (we'll reset all to be safe)
-    resetTempForList("experience");
-    resetTempForList("projects");
-    resetTempForList("certifications");
-  };
-
-  // When answering within a list item
   const handleListItemAnswer = (listName: keyof PortfolioData, questions: Question[], index: number, value: string) => {
-    // Update corresponding temp object
     if (listName === "education") setTempEdu(prev => ({ ...prev, [(questions[index].fieldPath)]: value }));
     if (listName === "experience") setTempExp(prev => ({ ...prev, [(questions[index].fieldPath)]: value }));
     if (listName === "projects") setTempProj(prev => ({ ...prev, [(questions[index].fieldPath)]: value }));
     if (listName === "certifications") setTempCert(prev => ({ ...prev, [(questions[index].fieldPath)]: value }));
 
-    // Move to next list item question or finish item
     if (index < questions.length - 1) {
       setListItemQuestionIndex(index + 1);
     } else {
-      // finished this item - add to list and ask user if they want to add another
       addTempToList(listName);
       setListItemQuestionIndex(0);
-      // keep isAddingListItem true, but we'll show "Added! Add another?" UI
-      // We'll change a small flag by reusing listItemQuestionIndex == 0 and a justAdded marker visually
-      setIsAddingListItem(false); // we toggle off so UI shows controls: Add another / Continue
+      setIsAddingListItem(false);
     }
   };
 
-  /* -------------------------
-     Remove item from list
-     ------------------------- */
   const removeFromList = (listName: keyof PortfolioData, idx: number) => {
     setFormData(prev => {
       const copy = JSON.parse(JSON.stringify(prev)) as PortfolioData;
@@ -396,106 +356,192 @@ export const ProjectForm: React.FC = () => {
     });
   };
 
-  /* -------------------------
-     JSON Generation
-     ------------------------- */
-  const handleGenerateJson = () => {
-    const finalData = {
-      personal: {
-        ...formData.personal,
-        age: 22,
-        location: "Vidisha, Madhya Pradesh, India",
-        phone: "+91 8305117236",
-        handle: "@anujjainbatu",
-        fallbackAvatar: "https://images.unsplash.com/photo-1610216705422-caa3fcb6d158?q=80&w=3560&auto=format&fit=crop&ixlib-rb-4.0.3"
-      },
-      education: {
-        current: formData.education[0] || {},
-        previous: formData.education[1] || {},
-        achievements: [],
-      },
-      experience: formData.experience.map(exp => ({ ...exp, type: "Internship", technologies: exp.technologies?.split?.(',')?.map((t: string) => t.trim()) || [] })),
-      skills: {
-        programming: formData.skills.programming.split(",").map(t => t.trim()),
-        ml_ai: formData.skills.ml_ai.split(",").map(t => t.trim()),
-        web_development: formData.skills.web_development.split(",").map(t => t.trim()),
-        databases: formData.skills.databases.split(",").map(t => t.trim()),
-        devops_cloud: formData.skills.devops_cloud.split(",").map(t => t.trim()),
-        iot_hardware: [],
-        soft_skills: []
-      },
-      certifications: formData.certifications,
-      projects: formData.projects.map(proj => ({ ...proj, techStack: proj.techStack.split(",").map(t => t.trim()), links: [{ name: "GitHub", url: proj.githubUrl }, { name: "Live Site", url: proj.liveUrl }], images: [], status: "Completed", featured: true })),
-      social: formData.social,
-      internship: {
-        seeking: true,
-        duration: "6 months",
-        startDate: "Immediately",
-        preferredLocation: "Remote or On-site",
-        focusAreas: ["AI Development", "Full-stack Development", "Machine Learning"],
-        availability: "Available for immediate start",
-        workStyle: "Fast learner, team player, problem solver",
-        goals: "To contribute to meaningful projects and grow my skills."
-      },
-      personality: {
-        traits: ["passionate", "curious", "determined"],
-        interests: ["AI/ML", "IoT", "Web Development"],
-        funFacts: ["SIH 2025 finalist", "Active freelancer"],
-        workingStyle: "I move fast, learn faster.",
-        motivation: "Building impactful technology."
-      },
-      resume: {
-        title: "My Resume",
-        description: "My professional resume.",
-        fileType: "PDF",
-        lastUpdated: new Date().toISOString().split("T")[0],
-        fileSize: "1MB",
-        downloadUrl: ""
-      },
-      chatbot: {
-        name: "MyBot",
-        personality: "friendly",
-        tone: "professional",
-        language: "english",
-        responseStyle: "short",
-        useEmojis: true,
-        topics: ["projects", "skills", "experience"]
-      },
-      presetQuestions: {
-        me: ["Who are you?"],
-        professional: ["What are your skills?", "Can I see your resume?"],
-        projects: ["What projects are you most proud of?"],
-        achievements: ["What are your major achievements?"],
-        contact: ["How can I reach you?"],
-        fun: ["What are your hobbies?"]
-      },
-      meta: { 
-        configVersion: "2.0",
-        lastUpdated: new Date().toISOString().split("T")[0],
-        generatedBy: "NoCodePholio",
-        description: "Portfolio configuration generated by NoCodePholio form."
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(finalData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "portfolio-config.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // Redirect to the template selection page
-    router.push('/select-template');
+  const startAddingListItem = (listName: keyof PortfolioData) => {
+    resetTempForList(listName);
+    setIsAddingListItem(true);
+    setListItemQuestionIndex(0);
   };
+
+  const cancelAddingListItem = () => {
+    setIsAddingListItem(false);
+    setListItemQuestionIndex(0);
+    resetTempForList("education");
+    resetTempForList("experience");
+    resetTempForList("projects");
+    resetTempForList("certifications");
+  };
+
+  /* -------------------------
+     NEW: File Upload Handler (Returns path or throws error)
+     ------------------------- */
+  const handleAvatarUpload = async (): Promise<string> => {
+    if (!avatarFile) {
+      return formData.personal.avatar || ""; // Return existing path if no new file
+    }
+
+    const uploadFormData = new FormData();
+    uploadFormData.append('avatar', avatarFile);
+
+    try {
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        const res = await response.json();
+        throw new Error(res.error || 'Failed to upload image');
+      }
+
+      const { path } = await response.json();
+      return path; // Return the new path
+    } catch (error) {
+      console.error(error);
+      alert(`Error uploading image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error; // Re-throw to stop the save process
+    }
+  };
+
+  /* -------------------------
+     NEW: Config Save Handler (Returns boolean)
+     ------------------------- */
+  const handleSaveConfig = async (configData: any): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/save-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configData),
+      });
+
+      if (!response.ok) {
+        const res = await response.json();
+        throw new Error(res.error || 'Failed to save configuration');
+      }
+      return true;
+    } catch (error) {
+      console.error(error);
+      alert(`Error saving configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return false;
+    }
+  };
+
+  /* -------------------------
+     NEW: Main function to orchestrate save and redirect
+     ------------------------- */
+  const handleGenerateAndRedirect = async () => {
+    setIsLoading(true);
+    let avatarPath = formData.personal.avatar;
+
+    try {
+      // Step 1: Upload Avatar if it exists
+      if (avatarFile) {
+        avatarPath = await handleAvatarUpload();
+      }
+
+      // Step 2: Build the final JSON object
+      const finalData = {
+        personal: {
+          ...formData.personal,
+          avatar: avatarPath, // Use the new or existing path
+          age: 22,
+          location: "Vidisha, Madhya Pradesh, India",
+          phone: "+91 8305117236",
+          handle: "@anujjainbatu",
+          fallbackAvatar: "https://images.unsplash.com/photo-1610216705422-caa3fcb6d158?q=80&w=3560&auto=format&fit=crop&ixlib-rb-4.0.3"
+        },
+        education: {
+          current: formData.education[0] || {},
+          previous: formData.education[1] || {},
+          achievements: [],
+        },
+        experience: formData.experience.map(exp => ({ ...exp, type: "Internship", technologies: exp.technologies?.split?.(',')?.map((t: string) => t.trim()) || [] })),
+        skills: {
+          programming: formData.skills.programming.split(",").map(t => t.trim()),
+          ml_ai: formData.skills.ml_ai.split(",").map(t => t.trim()),
+          web_development: formData.skills.web_development.split(",").map(t => t.trim()),
+          databases: formData.skills.databases.split(",").map(t => t.trim()),
+          devops_cloud: formData.skills.devops_cloud.split(",").map(t => t.trim()),
+          iot_hardware: [],
+          soft_skills: []
+        },
+        certifications: formData.certifications,
+        projects: formData.projects.map(proj => ({ ...proj, techStack: proj.techStack.split(",").map(t => t.trim()), links: [{ name: "GitHub", url: proj.githubUrl }, { name: "Live Site", url: proj.liveUrl }], images: [], status: "Completed", featured: true })),
+        social: formData.social,
+        internship: {
+          seeking: true,
+          duration: "6 months",
+          startDate: "Immediately",
+          preferredLocation: "Remote or On-site",
+          focusAreas: ["AI Development", "Full-stack Development", "Machine Learning"],
+          availability: "Available for immediate start",
+          workStyle: "Fast learner, team player, problem solver",
+          goals: "To contribute to meaningful projects and grow my skills."
+        },
+        personality: {
+          traits: ["passionate", "curious", "determined"],
+          interests: ["AI/ML", "IoT", "Web Development"],
+          funFacts: ["SIH 2025 finalist", "Active freelancer"],
+          workingStyle: "I move fast, learn faster.",
+          motivation: "Building impactful technology."
+        },
+        resume: {
+          title: "My Resume",
+          description: "My professional resume.",
+          fileType: "PDF",
+          lastUpdated: new Date().toISOString().split("T")[0],
+          fileSize: "1MB",
+          downloadUrl: ""
+        },
+        chatbot: {
+          name: "MyBot",
+          personality: "friendly",
+          tone: "professional",
+          language: "english",
+          responseStyle: "short",
+          useEmojis: true,
+          topics: ["projects", "skills", "experience"]
+        },
+        presetQuestions: {
+          me: ["Who are you?"],
+          professional: ["What are your skills?", "Can I see your resume?"],
+          projects: ["What projects are you most proud of?"],
+          achievements: ["What are your major achievements?"],
+          contact: ["How can I reach you?"],
+          fun: ["What are your hobbies?"]
+        },
+        meta: { 
+          configVersion: "2.0",
+          lastUpdated: new Date().toISOString().split("T")[0],
+          generatedBy: "NoCodePholio",
+          description: "Portfolio configuration generated by NoCodePholio form."
+        }
+      };
+
+      // Step 3: Save the config file
+      const saveSuccess = await handleSaveConfig(finalData);
+
+      // Step 4: Redirect
+      if (saveSuccess) {
+        router.push('/select-template');
+      } else {
+        throw new Error("Failed to save configuration file.");
+      }
+
+    } catch (error) {
+      // If anything fails, stop loading and stay on the form
+      setIsLoading(false);
+      // Alert is already handled in the sub-functions
+    }
+    // Don't set isLoading(false) here, as we are redirecting on success
+  };
+
 
   /* -------------------------
      UI helpers - current question + value
      ------------------------- */
   const getProgressPercent = () => {
-    // roughly map phase & question index into a linear progress
     const phaseIndex = PHASES.indexOf(currentPhase);
     const perPhase = 100 / (PHASES.length);
     const questionProgress = phaseQuestionIndex / Math.max(1, questionsForPhase(currentPhase).length);
@@ -506,16 +552,10 @@ export const ProjectForm: React.FC = () => {
      Renderers
      ------------------------- */
 
-  /* -------------------------
-     Phase-specific UIs
-     ------------------------- */
-
-  // Non-list phases: personal, skills, social
   const renderSimplePhase = (phase: Phase) => {
     const qs = questionsForPhase(phase);
     const q = qs[phaseQuestionIndex];
     if (!q) {
-      // no questions (e.g., if phase unexpectedly empty) — just show continue
       return (
         <div className="conversational-step">
           <TypewriterLabel key={`${capitalize(phase)}-empty`} text={`${capitalize(phase)} — nothing to ask.`} />
@@ -528,51 +568,91 @@ export const ProjectForm: React.FC = () => {
     }
 
     const currentValue = getNestedValue(q.fieldPath);
+    const isLastPhase = PHASES.indexOf(currentPhase) === PHASES.length - 1;
+    const isLastQuestion = phaseQuestionIndex === qs.length - 1;
+    const nextButtonText = isLastPhase && isLastQuestion ? "Generate" : "Next";
+    const nextButtonIcon = isLastPhase && isLastQuestion ? <FaRocket /> : <FaArrowRight />;
+
+    const renderInputForQuestion = () => {
+      if (q.type === "file") {
+        return (
+          <div className="input-group" style={{ gap: '0.75rem' }}>
+            <label className="file-input-label" htmlFor="avatar-upload">
+              {q.icon}
+              {avatarFile ? avatarFile.name : 'Choose a profile picture'}
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/png, image/jpeg, image/jpg"
+              onChange={(e) => setAvatarFile(e.target.files ? e.target.files[0] : null)}
+              style={{ display: 'none' }}
+            />
+            {/* Show the saved path if it exists from a previous session (but new file takes precedence) */}
+            {!avatarFile && currentValue && (
+              <p style={{ color: '#A0AEC0', fontSize: '0.9rem', textAlign: 'center' }}>
+                Current image: {currentValue}
+              </p>
+            )}
+          </div>
+        );
+      }
+      
+      if (q.type === "textarea") {
+        return (
+          <TextArea
+            placeholder={q.label}
+            value={currentValue}
+            onChange={(e) => setNestedValue(q.fieldPath, e.target.value)}
+            rows={6}
+          />
+        );
+      }
+      
+      return (
+        <Input
+          icon={q.icon}
+          placeholder={q.label}
+          type={q.type || "text"}
+          value={currentValue}
+          onChange={(e) => setNestedValue(q.fieldPath, e.target.value)}
+        />
+      );
+    };
 
     return (
       <div className="conversational-step">
         <TypewriterLabel key={q.label} text={q.label} />
         <div style={{ width: "100%" }}>
-          {q.type === "textarea" ? (
-            <TextArea
-              placeholder={q.label}
-              value={currentValue}
-              onChange={(e) => setNestedValue(q.fieldPath, e.target.value)}
-              rows={6}
-            />
-          ) : (
-            <Input
-              icon={q.icon}
-              placeholder={q.label}
-              type={q.type || "text"}
-              value={currentValue}
-              onChange={(e) => setNestedValue(q.fieldPath, e.target.value)}
-            />
-          )}
+          {renderInputForQuestion()}
 
           <div className="navigation-buttons" style={{ marginTop: "1rem" }}>
             <button className="prev-button" onClick={goToPrevPhase} disabled={PHASES.indexOf(currentPhase) === 0}><FaArrowLeft /> Back</button>
 
             <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
-              {q.optional && <button className="prev-button" onClick={() => {
-                // Skip optional
-                if (phaseQuestionIndex < qs.length - 1) setPhaseQuestionIndex(phaseQuestionIndex + 1);
-                else goToNextPhase();
-              }}>Skip</button>}
+              {q.optional && (
+                <button className="prev-button" onClick={() => {
+                  if (phaseQuestionIndex < qs.length - 1) setPhaseQuestionIndex(phaseQuestionIndex + 1);
+                  else goToNextPhase();
+                }}>Skip</button>
+              )}
 
-              <button className="next-button" onClick={() => {
-                // If value is empty and not optional, do not proceed
-                const val = getNestedValue(q.fieldPath) as string;
-                if (!val && !q.optional) {
-                  // simple visual nudge: focus on the input via DOM (best-effort)
-                  const el = document.querySelector(".conversational-step input, .conversational-step textarea") as HTMLElement | null;
-                  el?.focus();
-                  return;
-                }
-                // move forward
-                if (phaseQuestionIndex < qs.length - 1) setPhaseQuestionIndex(phaseQuestionIndex + 1);
-                else goToNextPhase();
-              }}>Next <FaArrowRight /></button>
+              <button 
+                className={isLastPhase && isLastQuestion ? "generate-button" : "next-button"}
+                onClick={() => {
+                  const val = getNestedValue(q.fieldPath) as string;
+                  // Skip validation for file input, as file is optional
+                  if (!val && !q.optional && q.type !== 'file') {
+                    const el = document.querySelector(".conversational-step input, .conversational-step textarea") as HTMLElement | null;
+                    el?.focus();
+                    return;
+                  }
+                  
+                  if (phaseQuestionIndex < qs.length - 1) setPhaseQuestionIndex(phaseQuestionIndex + 1);
+                  else goToNextPhase(); // This will trigger handleGenerateAndRedirect on the last step
+              }}>
+                {nextButtonText} {nextButtonIcon}
+              </button>
             </div>
           </div>
         </div>
@@ -580,12 +660,11 @@ export const ProjectForm: React.FC = () => {
     );
   };
 
-  // List phases (education/experience/projects/certifications)
   const renderListPhase = (phase: Phase) => {
     const listName = phase as keyof PortfolioData;
     const list = (formData as any)[listName] as any[];
+    const isLastPhase = PHASES.indexOf(currentPhase) === PHASES.length - 1;
 
-    // If currently adding an item -> show item question-by-question
     if (isAddingListItem) {
       let questionsForItem: Question[] = [];
       if (phase === "education") questionsForItem = educationQuestionsForItem;
@@ -595,7 +674,6 @@ export const ProjectForm: React.FC = () => {
 
       const q = questionsForItem[listItemQuestionIndex];
 
-      // get current temp value for this field
       const tempVal = (() => {
         if (phase === "education") return (tempEdu as any)[q.fieldPath] ?? "";
         if (phase === "experience") return (tempExp as any)[q.fieldPath] ?? "";
@@ -630,30 +708,23 @@ export const ProjectForm: React.FC = () => {
             )}
 
             <div className="navigation-buttons" style={{ marginTop: "1rem" }}>
-              <button className="prev-button" onClick={() => {
-                // cancel adding this item and return to list overview
-                cancelAddingListItem();
-              }}><FaArrowLeft /> Cancel</button>
+              <button className="prev-button" onClick={cancelAddingListItem}><FaArrowLeft /> Cancel</button>
 
               <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
                 {q.optional && <button className="prev-button" onClick={() => {
-                  // skip field
                   if (listItemQuestionIndex < questionsForItem.length - 1) setListItemQuestionIndex(listItemQuestionIndex + 1);
                   else {
-                    // finish item by adding whatever we have
                     addTempToList(listName);
                     setIsAddingListItem(false);
                   }
                 }}>Skip</button>}
 
                 <button className="next-button" onClick={() => {
-                  // require value if not optional
                   if (!tempVal && !q.optional) {
                     const el = document.querySelector(".conversational-step input, .conversational-step textarea") as HTMLElement | null;
                     el?.focus();
                     return;
                   }
-                  // store and move to next question/complete item
                   handleListItemAnswer(listName, questionsForItem, listItemQuestionIndex, tempVal ?? "");
                 }}>Next <FaArrowRight /></button>
               </div>
@@ -663,7 +734,7 @@ export const ProjectForm: React.FC = () => {
       );
     }
 
-    // Not currently adding: show list overview + controls to add more or continue
+    // List overview
     return (
       <div className="conversational-step">
         <TypewriterLabel key={`list-${phase}`} text={`Your ${capitalize(phase)} entries`} />
@@ -689,7 +760,15 @@ export const ProjectForm: React.FC = () => {
           <button className="add-project-button" onClick={() => startAddingListItem(listName)}><FaPlus /> Add {capitalizeSingular(phase)}</button>
           <div style={{ marginLeft: "auto", display: "flex", gap: ".5rem" }}>
             <button className="prev-button" onClick={goToPrevPhase}><FaArrowLeft /> Back</button>
-            <button className="next-button" onClick={goToNextPhase}>Continue <FaArrowRight /></button>
+            {isLastPhase ? (
+              <button className="generate-button" onClick={handleGenerateAndRedirect}>
+                Generate <FaRocket />
+              </button>
+            ) : (
+              <button className="next-button" onClick={goToNextPhase}>
+                Continue <FaArrowRight />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -699,32 +778,20 @@ export const ProjectForm: React.FC = () => {
   /* -------------------------
      Master render
      ------------------------- */
+  
+  // --- NEW: Show loading screen if isLoading ---
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   const renderCurrent = () => {
     if (currentPhase === "personal" || currentPhase === "skills" || currentPhase === "social") {
       return renderSimplePhase(currentPhase);
     }
-
     if (currentPhase === "education" || currentPhase === "experience" || currentPhase === "projects" || currentPhase === "certifications") {
       return renderListPhase(currentPhase);
     }
-
-    if (currentPhase === "finish") {
-      return (
-        <div className="conversational-step" style={{ alignItems: "center" }}>
-          <TypewriterLabel key="finish" text="All Done! Generate your portfolio-config.json" />
-          <p style={{ color: "#A0AEC0", textAlign: "center", maxWidth: 560 }}>
-            Click the button to download your configuration file.
-            After downloading, you will be taken to the template selection page.
-          </p>
-          <div style={{ width: "100%", display: "flex", gap: ".5rem", marginTop: "1.2rem" }}>
-            <button className="prev-button" onClick={goToPrevPhase}><FaArrowLeft /> Back</button>
-            <button className="generate-button" onClick={handleGenerateJson} style={{ marginLeft: "auto" }}><FaFileDownload /> Download & Continue</button>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
+    return null; // "finish" phase is now handled by the "Generate" button
   };
 
   return (
@@ -760,5 +827,3 @@ function capitalizeSingular(phase: string) {
 }
 
 export default ProjectForm;
-
-// --- REMOVED DUPLICATE HELPER DEFINITIONS ---

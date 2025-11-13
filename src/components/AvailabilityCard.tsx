@@ -42,14 +42,23 @@ const AvailabilityCard = ({}: AvailabilityCardProps) => { // <-- data prop remov
       {/* Header */}
       <div className="mb-6 flex flex-col items-center sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
+
+          {/* === MODIFICATION START === */}
           {/* Avatar placeholder */}
           <div className="bg-muted h-16 w-16 overflow-hidden rounded-full shadow-md">
             <img
-              src="/profile.jpeg"
-              alt="Anuj's avatar"
+              src={config.personal.avatar} // Use dynamic path from config
+              alt={config.personal.name ? `${config.personal.name}'s avatar` : "Anuj's avatar"} // Use dynamic alt text
               className="h-full w-full object-cover object-[center_top_-5%] scale-95"
+              // Add fallback in case the image fails to load
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = config.personal.fallbackAvatar; // Use fallback path from config
+              }}
             />
           </div>
+          {/* === MODIFICATION END === */}
+          
           <div>
             <h2 className="text-foreground text-2xl font-semibold">
               {config.personal.name} {/* <-- UPDATED */}

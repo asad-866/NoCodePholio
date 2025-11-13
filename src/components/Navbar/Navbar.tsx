@@ -49,9 +49,6 @@ const Navbar: React.FC = () => {
             <Link href="/portfolio/about" className="text-muted-foreground hover:text-foreground transition-colors">
               About
             </Link>
-            <Link href="/portfolio/chat" className="text-muted-foreground hover:text-foreground transition-colors">
-              Chat
-            </Link>
           </div>
 
           {/* Auth & Profile Section - UPDATED */}
