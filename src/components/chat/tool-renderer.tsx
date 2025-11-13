@@ -66,7 +66,8 @@ export default function ToolRenderer({
           case 'getInternship':
             return (
               <div key={toolCallId} className="w-full rounded-lg">
-                <AvailabilityCard data={tool.result} />
+                {/* --- MODIFIED: No data prop needed --- */}
+                <AvailabilityCard />
               </div>
             );
 

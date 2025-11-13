@@ -3,50 +3,33 @@
 import { motion } from 'framer-motion';
 import { CalendarDays, Code2, Globe, Briefcase } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+// --- NEW IMPORT ---
+import { getConfig } from '@/lib/config-loader';
 
-interface AvailabilityData {
-  availability: string;
-  preferences: {
-    roleTypes: string[];
-    industries: string[];
-    workMode: string;
-    location: string;
-  };
-  experience: {
-    internshipCompleted: string;
-    freelanceWork: string;
-    projectExperience: string;
-  };
-  skills: {
-    technical: string[];
-    soft: string[];
-  };
-  achievements: string[];
-  lookingFor: {
-    growthOpportunities: string;
-    mentorship: string;
-    impactfulWork: string;
-    technicalChallenges: string;
-    collaboration: string;
-  };
-  contact: {
-    email: string;
-    linkedin: string;
-    github: string;
-    portfolio: string;
-  };
-}
+// --- REMOVED AvailabilityData interface ---
 
 interface AvailabilityCardProps {
-  data?: AvailabilityData;
+  // --- REMOVED data prop ---
 }
 
-const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
+const AvailabilityCard = ({}: AvailabilityCardProps) => { // <-- data prop removed
   const router = useRouter();
+
+  // --- ADDED: Load config directly ---
+  const config = getConfig();
+  
+  // --- ADDED: Replicate logic from getInternship tool ---
+  const internshipCompleted = config.experience.find(exp => exp.type === "Internship")
+    ? `${config.experience.find(exp => exp.type === "Internship")?.position} at ${config.experience.find(exp => exp.type === "Internship")?.company}`
+    : "No formal internship completed yet";
+  
+  const freelanceWork = config.experience.find(exp => exp.type === "Freelance")?.description 
+    || "Active freelancer";
 
   const handleContactClick = () => {
     // Navigate to home page with the contact preset question
-    router.push('/?query=How can I reach you?');
+    // --- UPDATED ROUTE ---
+    router.push('/portfolio/chat?query=How can I reach you?');
   };
 
   return (
@@ -69,7 +52,7 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
           </div>
           <div>
             <h2 className="text-foreground text-2xl font-semibold">
-              Anuj Jain
+              {config.personal.name} {/* <-- UPDATED */}
             </h2>
             <p className="text-muted-foreground text-sm">
               Available for Opportunities
@@ -104,7 +87,7 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
           <div>
             <p className="text-sm font-medium text-foreground mb-1">Status</p>
             <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-              {data?.availability || "✅ Available for immediate start"}
+              {config.internship.availability || "✅ Available for immediate start"} {/* <-- UPDATED */}
             </p>
           </div>
           <div>
@@ -123,7 +106,7 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
           <div>
             <p className="text-foreground text-sm font-medium">Duration</p>
             <p className="text-muted-foreground text-sm">
-              {data?.availability || "Available for full-time roles starting immediately"}
+              {config.internship.availability || "Available for full-time roles starting immediately"} {/* <-- UPDATED */}
             </p>
           </div>
         </div>
@@ -132,7 +115,8 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
           <div>
             <p className="text-foreground text-sm font-medium">Location</p>
             <p className="text-muted-foreground text-sm">
-              {data?.preferences.location || "Based in India, open to relocation for the right opportunity 🇮🇳"}
+              {/* --- THIS IS THE FIX --- */}
+              {config.personal.location || "Based in India, open to relocation for the right opportunity 🇮🇳"}
             </p>
           </div>
         </div>
@@ -144,31 +128,20 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
             <p className="text-foreground text-sm font-medium">Tech stack</p>
             <div className="text-muted-foreground grid grid-cols-1 gap-y-1 text-sm sm:grid-cols-2">
               <ul className="decoration-none list-disc pl-4">
-                {data?.skills.technical.slice(0, 4).map((skill, index) => (
+                {/* --- UPDATED --- */}
+                {config.skills.programming.slice(0, 4).map((skill, index) => (
                   <li key={index}>{skill}</li>
-                )) || (
-                  <>
-                    <li>Python, SQL, JavaScript, HTML/CSS</li>
-                    <li>FastAPI, Flask, Django, React.js</li>
-                    <li>Scikit-learn, XGBoost, TensorFlow, OpenCV</li>
-                    <li>OpenAI API, LangChain, LangGraph</li>
-                  </>
-                )}
+                ))}
               </ul>
               <ul className="list-disc pl-4">
-                {data?.skills.technical.slice(4, 8).map((skill, index) => (
+                {/* --- UPDATED --- */}
+                {config.skills.ml_ai.slice(0, 4).map((skill, index) => (
                   <li key={index}>{skill}</li>
-                )) || (
-                  <>
-                    <li>Docker, Git, GitHub Actions, AWS</li>
-                    <li>Firebase, Heroku, ESP32, IoT</li>
-                    <li>Machine Learning, AI Agents</li>
-                    <li>Web Scraping, Automation</li>
-                  </>
-                )}
+                ))}
                 <li>
+                  {/* --- UPDATED ROUTE --- */}
                   <a
-                    href="/?query=What%20are%20your%20skills%3F%20Give%20me%20a%20list%20of%20your%20soft%20and%20hard%20skills."
+                    href="/portfolio/chat?query=What%20are%20your%20skills%3F%20Give%20me%20a%20list%20of%20your%20soft%20and%20hard%20skills."
                     className="cursor-pointer items-center text-blue-500 underline"
                   >
                     See more
@@ -186,9 +159,9 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
           What I bring
         </p>
         <p className="text-foreground text-sm">
-          {data?.experience.internshipCompleted || "Real-world ML experience from MookMati (Genre classification, FastAPI deployment, AWS)."} <br /> 
-          {data?.achievements[0] || "2nd position in Smart India Hackathon 2025 among 88,221 teams with hideFlare cybersecurity tool."} <br /> 
-          {data?.experience.freelanceWork || "25+ freelance automation projects delivered on Fiverr, cutting manual work by 60%."}
+          {internshipCompleted} <br /> 
+          {config.education.achievements[0] || "2nd position in Smart India Hackathon 2025 among 88,221 teams with hideFlare cybersecurity tool."} <br /> 
+          {freelanceWork}
         </p>
       </div>
 
@@ -196,7 +169,7 @@ const AvailabilityCard = ({ data }: AvailabilityCardProps) => {
       <div className="mt-8">
         <p className="text-foreground mb-2 text-lg font-semibold">Goal</p>
         <p className="text-foreground text-sm">
-          {data?.lookingFor.growthOpportunities || "Looking for roles that offer learning and advancement opportunities with experienced teams."} I want to work on {data?.lookingFor.technicalChallenges || "cutting-edge technologies"} that {data?.lookingFor.impactfulWork || "solve real-world problems and make a meaningful impact"}. I'm passionate, adaptable, and ready to contribute to {data?.lookingFor.collaboration || "collaborative, innovative environments"}! 🚀
+          {config.internship.goals || "Looking for roles that offer learning and advancement opportunities with experienced teams."} I want to work on cutting-edge technologies that solve real-world problems and make a meaningful impact. I'm passionate, adaptable, and ready to contribute to collaborative, innovative environments! 🚀
         </p>
       </div>
 

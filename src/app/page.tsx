@@ -1,9 +1,12 @@
+// src/app/page.tsx
 import { ProjectForm } from '@/components/ProjectForm/ProjectForm';
+import Navbar from '@/components/Navbar/Navbar'; // <-- IMPORT NAVBAR
 
-// This is now your homepage
 export default function Home() {
   return (
-    <main>
+    // Add padding-top to account for the fixed navbar
+    <main className="w-full pt-20"> {/* pt-20 for navbar offset */}
+      <Navbar /> {/* <-- ADDED NAVBAR */}
       <ProjectForm />
     </main>
   );

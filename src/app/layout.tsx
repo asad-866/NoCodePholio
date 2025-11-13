@@ -7,9 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// --- Import your new components ---
-import Navbar from "@/components/Navbar/Navbar";
-import Footer from "@/components/Footer/Footer";
+// --- Navbar and Footer are REMOVED from here ---
 
 // Load Inter font for non-Apple devices
 const inter = Inter({ 
@@ -51,16 +49,11 @@ export default function RootLayout({
           defaultTheme="light" // You might want "dark" based on your design
           enableSystem={false} // This is correct
         >
-          {/* --- Add Navbar here --- */}
-          <Navbar />
-
-          {/* --- Add padding-top to main to avoid navbar overlap --- */}
-          <main className="flex min-h-screen flex-col items-center py-30">
+          {/* --- Navbar and Footer are REMOVED --- */}
+          {/* The main tag now simply wraps the children */}
+          <main className="flex min-h-screen flex-col items-center">
             {children}
           </main>
-
-          {/* --- Add Footer here --- */}
-          <Footer />
           
           <Toaster />
         </ThemeProvider>
