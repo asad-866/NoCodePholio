@@ -1,9 +1,9 @@
 {
   "personal": {
-    "name": "Asad Shaikh",
-    "title": "Asdasd",
-    "email": "asdasd",
-    "bio": "",
+    "name": "Asadullah Shaikh",
+    "title": "Front-end Developer",
+    "email": "asadullah@gmail.com",
+    "bio": "My Name is Asadullah Shaikh. I am currently pursuing MCA from MIT-WPU .",
     "avatar": "/profile-pic.jpg",
     "age": 22,
     "location": "Vidisha, Madhya Pradesh, India",
@@ -12,20 +12,27 @@
     "fallbackAvatar": "https://images.unsplash.com/photo-1610216705422-caa3fcb6d158?q=80&w=3560&auto=format&fit=crop&ixlib-rb-4.0.3"
   },
   "education": {
-    "current": {},
+    "current": {
+      "degree": "MCA",
+      "institution": "MIT-WPU",
+      "duration": "2024-2026",
+      "cgpa": "6.70"
+    },
     "previous": {},
     "achievements": []
   },
   "experience": [],
   "skills": {
     "programming": [
-      "asd"
+      "Java",
+      "Python",
+      "React.js"
     ],
     "ml_ai": [
       ""
     ],
     "web_development": [
-      "asd"
+      "React.js"
     ],
     "databases": [
       ""
@@ -37,7 +44,32 @@
     "soft_skills": []
   },
   "certifications": [],
-  "projects": [],
+  "projects": [
+    {
+      "title": "NoCodePholio",
+      "category": "Web",
+      "description": "NoCodePholio is a portfolio generator without using traditional code.",
+      "techStack": [
+        "react.js",
+        "python"
+      ],
+      "githubUrl": "",
+      "liveUrl": "",
+      "links": [
+        {
+          "name": "GitHub",
+          "url": ""
+        },
+        {
+          "name": "Live Site",
+          "url": ""
+        }
+      ],
+      "images": [],
+      "status": "Completed",
+      "featured": true
+    }
+  ],
   "social": {
     "linkedin": "",
     "github": "",
